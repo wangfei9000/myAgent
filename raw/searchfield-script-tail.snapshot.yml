@@ -1,0 +1,220 @@
+- generic [ref=f11e146]:
+  - textbox "Cursor at row 24" [active] [ref=f11e402]: // 3. 构建 enum
+  - generic [ref=f11e149]:
+    - generic [ref=f11e150]:
+      - text: "1"
+      - button [expanded] [ref=f11e151] [cursor=pointer]
+    - generic [ref=f11e152]:
+      - text: "2"
+      - button [expanded] [ref=f11e153] [cursor=pointer]
+    - generic [aria-hidden] [ref=f11e154]: "3"
+    - generic [aria-hidden] [ref=f11e155]: "4"
+    - generic [aria-hidden] [ref=f11e156]: "5"
+    - generic [aria-hidden] [ref=f11e157]: "6"
+    - generic [ref=f11e158]:
+      - text: "7"
+      - button [expanded] [ref=f11e159] [cursor=pointer]
+    - generic [aria-hidden] [ref=f11e160]: "8"
+    - generic [ref=f11e161]:
+      - text: "9"
+      - button [expanded] [ref=f11e162] [cursor=pointer]
+    - generic [ref=f11e163]:
+      - text: "10"
+      - button [expanded] [ref=f11e164] [cursor=pointer]
+    - generic [aria-hidden] [ref=f11e165]: "11"
+    - generic [aria-hidden] [ref=f11e166]: "12"
+    - generic [aria-hidden] [ref=f11e167]: "13"
+    - generic [aria-hidden] [ref=f11e168]: "14"
+    - generic [aria-hidden] [ref=f11e169]: "15"
+    - generic [aria-hidden] [ref=f11e170]: "16"
+    - generic [aria-hidden] [ref=f11e171]: "17"
+    - generic [aria-hidden] [ref=f11e172]: "18"
+    - generic [aria-hidden] [ref=f11e173]: "19"
+    - generic [ref=f11e174]:
+      - text: "20"
+      - button [expanded] [ref=f11e175] [cursor=pointer]
+    - generic [aria-hidden] [ref=f11e176]: "21"
+    - generic [aria-hidden] [ref=f11e177]: "22"
+    - generic [aria-hidden] [ref=f11e178]: "23"
+    - generic [aria-hidden] [ref=f11e179]: "24"
+    - generic [aria-hidden] [ref=f11e180]: "25"
+    - generic [aria-hidden] [ref=f11e181]: "26"
+    - generic [aria-hidden] [ref=f11e182]: "27"
+    - generic [ref=f11e183]:
+      - text: "28"
+      - button [expanded] [ref=f11e184] [cursor=pointer]
+    - generic [ref=f11e185]:
+      - text: "29"
+      - button [expanded] [ref=f11e186] [cursor=pointer]
+    - generic [aria-hidden] [ref=f11e187]: "30"
+    - generic [aria-hidden] [ref=f11e188]: "31"
+    - generic [aria-hidden] [ref=f11e189]: "32"
+    - generic [aria-hidden] [ref=f11e190]: "33"
+    - generic [aria-hidden] [ref=f11e191]: "34"
+    - generic [aria-hidden] [ref=f11e192]: "35"
+    - generic [aria-hidden] [ref=f11e193]: "36"
+    - generic [aria-hidden] [ref=f11e194]: "37"
+    - generic [aria-hidden] [ref=f11e195]: "38"
+    - generic [ref=f11e196]:
+      - text: "39"
+      - button [expanded] [ref=f11e197] [cursor=pointer]
+    - generic [aria-hidden] [ref=f11e198]: "40"
+    - generic [aria-hidden] [ref=f11e199]: "41"
+    - generic [aria-hidden] [ref=f11e200]: "42"
+    - generic [aria-hidden] [ref=f11e201]: "43"
+    - generic [aria-hidden] [ref=f11e202]: "44"
+    - generic [aria-hidden] [ref=f11e203]: "45"
+    - generic [aria-hidden] [ref=f11e204]: "46"
+    - generic [ref=f11e205]:
+      - text: "47"
+      - button [expanded] [ref=f11e206] [cursor=pointer]
+    - generic [ref=f11e207]:
+      - text: "48"
+      - button [expanded] [ref=f11e208] [cursor=pointer]
+    - generic [aria-hidden] [ref=f11e209]: "49"
+    - generic [aria-hidden] [ref=f11e210]: "50"
+    - generic [ref=f11e211]:
+      - text: "51"
+      - button [expanded] [ref=f11e212] [cursor=pointer]
+  - generic [ref=f11e214]:
+    - generic:
+      - generic: "/*{ parameters, user ->"
+      - generic: "return _with_entity_by_id(299475L) {"
+      - generic: "return gridSearchSchema([searchFieldCss: \"col-lg-3\", searchButtonTitle: \"Search\"])"
+      - generic: "}"
+      - generic: "}*/"
+      - generic: "{ parameters, user ->"
+      - generic:
+        - generic:
+          - text: // 1.
+          - generic: 查
+          - generic: 询
+          - generic: 城
+          - generic: 市
+          - generic: 数
+          - generic: 据
+      - generic: "def cityList = _with_entity_by_id_readonly(295634L) { clazz1 ->"
+      - generic: "def result1 = query {"
+      - generic:
+        - text: eq
+        - generic:
+          - text: "\""
+          - generic: 状
+          - generic: 态
+          - text: "\""
+        - text: ", 0"
+      - generic:
+        - text: eq
+        - generic:
+          - text: "\""
+          - generic: 类
+          - generic: 型
+          - text: "\""
+        - text: ", 1"
+      - generic: order "id"
+      - generic: "}.list()"
+      - generic: "return result1 ?: []"
+      - generic: "}"
+      - generic:
+        - generic:
+          - text: // 2.
+          - generic: 构
+          - generic: 建
+          - text: titleMap
+      - generic: def cityTitleMap = [:]
+      - generic: "cityList.each { city ->"
+      - generic:
+        - text: cityTitleMap[city.id.toString()] = city.
+        - generic: 名
+        - generic: 称
+        - text: "?: city.id.toString()"
+      - generic: "}"
+      - generic:
+        - generic:
+          - text: // 3.
+          - generic: 构
+          - generic: 建
+          - text: enum
+      - generic: "def cityEnum = [\"\"] + cityList.collect { it.id.toString() }"
+      - generic:
+        - generic:
+          - text: // 1.
+          - generic: 查
+          - generic: 询
+          - generic: 行
+          - generic: 政
+          - generic: 区
+          - generic: 数
+          - generic: 据
+      - generic: "def disList = _with_entity_by_id_readonly(298900L) { clazz1 ->"
+      - generic: "def result1 = query {"
+      - generic:
+        - text: eq
+        - generic:
+          - text: "\""
+          - generic: 状
+          - generic: 态
+          - text: "\""
+        - text: ", 0"
+      - generic:
+        - text: eq
+        - generic:
+          - text: "\""
+          - generic: 类
+          - generic: 型
+          - text: "\""
+        - text: ", 1"
+      - generic: order "id"
+      - generic: "}.list()"
+      - generic: "return result1 ?: []"
+      - generic: "}"
+      - generic:
+        - generic:
+          - text: // 2.
+          - generic: 构
+          - generic: 建
+          - text: titleMap
+      - generic: def disTitleMap = [:]
+      - generic: "disList.each { dis ->"
+      - generic:
+        - text: disTitleMap[dis.id.toString()] = dis.
+        - generic: 名
+        - generic: 称
+        - text: "?: dis.id.toString()"
+      - generic: "}"
+      - generic:
+        - generic:
+          - text: // 3.
+          - generic: 构
+          - generic: 建
+          - text: enum
+      - generic: "def disEnum = [\"\"] + disList.collect { it.id.toString() }"
+      - generic:
+        - generic:
+          - text: // 4.
+          - generic: 返
+          - generic: 回
+          - generic: 配
+          - generic: 置
+      - generic: return [
+      - generic: "schema: ["
+      - generic:
+        - text: "\"68728EB8B3E2410E8597A9DF3E2FC32D\": [\"type\": \"string\", \"title\":"
+        - generic:
+          - text: "\""
+          - generic: 建
+          - generic: 筑
+          - generic: 物
+          - generic: 名
+          - generic: 称
+          - text: "\""
+        - text: "],"
+      - generic:
+        - text: "\"949B755976194D178FB9D3C974119D04\": [\"type\": \"string\", \"title\":"
+        - generic:
+          - text: "\""
+          - generic: 类
+          - generic: 型
+          - text: "\""
+        - text: ",\"default\": \"1\"],"
+      - generic: "\"5558B7F1336C46D2931DFA6329CE91C7\": ["

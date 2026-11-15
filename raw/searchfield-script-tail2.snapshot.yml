@@ -1,0 +1,197 @@
+- generic [ref=f11e146]:
+  - textbox "Cursor at row 85" [active] [ref=f11e403]: "}"
+  - generic [ref=f11e149]:
+    - generic [aria-hidden] [ref=f11e193]: "36"
+    - generic [aria-hidden] [ref=f11e194]: "37"
+    - generic [aria-hidden] [ref=f11e195]: "38"
+    - generic [ref=f11e196]:
+      - text: "39"
+      - button [expanded] [ref=f11e197] [cursor=pointer]
+    - generic [aria-hidden] [ref=f11e198]: "40"
+    - generic [aria-hidden] [ref=f11e199]: "41"
+    - generic [aria-hidden] [ref=f11e200]: "42"
+    - generic [aria-hidden] [ref=f11e201]: "43"
+    - generic [aria-hidden] [ref=f11e202]: "44"
+    - generic [aria-hidden] [ref=f11e203]: "45"
+    - generic [aria-hidden] [ref=f11e204]: "46"
+    - generic [ref=f11e205]:
+      - text: "47"
+      - button [expanded] [ref=f11e206] [cursor=pointer]
+    - generic [ref=f11e207]:
+      - text: "48"
+      - button [expanded] [ref=f11e208] [cursor=pointer]
+    - generic [aria-hidden] [ref=f11e209]: "49"
+    - generic [aria-hidden] [ref=f11e210]: "50"
+    - generic [ref=f11e211]:
+      - text: "51"
+      - button [expanded] [ref=f11e212] [cursor=pointer]
+    - generic [aria-hidden] [ref=f11e192]: "52"
+    - generic [aria-hidden] [ref=f11e191]: "53"
+    - generic [aria-hidden] [ref=f11e190]: "54"
+    - generic [aria-hidden] [ref=f11e189]: "55"
+    - generic [aria-hidden] [ref=f11e188]: "56"
+    - generic [aria-hidden] [ref=f11e187]: "57"
+    - generic [aria-hidden] [ref=f11e185]: "58"
+    - generic [ref=f11e183]:
+      - text: "59"
+      - button [expanded] [ref=f11e184] [cursor=pointer]
+    - generic [aria-hidden] [ref=f11e182]: "60"
+    - generic [aria-hidden] [ref=f11e181]: "61"
+    - generic [ref=f11e180]:
+      - text: "62"
+      - button [expanded] [ref=f11e404] [cursor=pointer]
+    - generic [aria-hidden] [ref=f11e179]: "63"
+    - generic [aria-hidden] [ref=f11e178]: "64"
+    - generic [aria-hidden] [ref=f11e177]: "65"
+    - generic [aria-hidden] [ref=f11e176]: "66"
+    - generic [aria-hidden] [ref=f11e174]: "67"
+    - generic [aria-hidden] [ref=f11e173]: "68"
+    - generic [aria-hidden] [ref=f11e172]: "69"
+    - generic [ref=f11e171]:
+      - text: "70"
+      - button [expanded] [ref=f11e405] [cursor=pointer]
+    - generic [aria-hidden] [ref=f11e170]: "71"
+    - generic [ref=f11e169]:
+      - text: "72"
+      - button [expanded] [ref=f11e406] [cursor=pointer]
+    - generic [ref=f11e168]:
+      - text: "73"
+      - button [expanded] [ref=f11e407] [cursor=pointer]
+    - generic [aria-hidden] [ref=f11e167]: "74"
+    - generic [ref=f11e166]:
+      - text: "75"
+      - button [expanded] [ref=f11e408] [cursor=pointer]
+    - generic [aria-hidden] [ref=f11e165]: "76"
+    - generic [aria-hidden] [ref=f11e163]: "77"
+    - generic [aria-hidden] [ref=f11e161]: "78"
+    - generic [aria-hidden] [ref=f11e160]: "79"
+    - generic [aria-hidden] [ref=f11e158]: "80"
+    - generic [aria-hidden] [ref=f11e157]: "81"
+    - generic [aria-hidden] [ref=f11e156]: "82"
+    - generic [aria-hidden] [ref=f11e155]: "83"
+    - generic [aria-hidden] [ref=f11e154]: "84"
+    - generic [aria-hidden] [ref=f11e152]: "85"
+  - generic [ref=f11e214]:
+    - generic:
+      - generic:
+        - generic:
+          - text: // 2.
+          - generic: 构
+          - generic: 建
+          - text: titleMap
+      - generic: def disTitleMap = [:]
+      - generic: "disList.each { dis ->"
+      - generic:
+        - text: disTitleMap[dis.id.toString()] = dis.
+        - generic: 名
+        - generic: 称
+        - text: "?: dis.id.toString()"
+      - generic: "}"
+      - generic:
+        - generic:
+          - text: // 3.
+          - generic: 构
+          - generic: 建
+          - text: enum
+      - generic: "def disEnum = [\"\"] + disList.collect { it.id.toString() }"
+      - generic:
+        - generic:
+          - text: // 4.
+          - generic: 返
+          - generic: 回
+          - generic: 配
+          - generic: 置
+      - generic: return [
+      - generic: "schema: ["
+      - generic:
+        - text: "\"68728EB8B3E2410E8597A9DF3E2FC32D\": [\"type\": \"string\", \"title\":"
+        - generic:
+          - text: "\""
+          - generic: 建
+          - generic: 筑
+          - generic: 物
+          - generic: 名
+          - generic: 称
+          - text: "\""
+        - text: "],"
+      - generic:
+        - text: "\"949B755976194D178FB9D3C974119D04\": [\"type\": \"string\", \"title\":"
+        - generic:
+          - text: "\""
+          - generic: 类
+          - generic: 型
+          - text: "\""
+        - text: ",\"default\": \"1\"],"
+      - generic: "\"5558B7F1336C46D2931DFA6329CE91C7\": ["
+      - generic: "\"type\": \"string\","
+      - generic:
+        - text: "\"title\":"
+        - generic:
+          - text: "\""
+          - generic: 城
+          - generic: 市
+          - text: "\""
+        - text: ","
+      - generic: "\"enum\": cityEnum"
+      - generic: "],"
+      - generic:
+        - text: "\"C46EEE2D14FC486E8E5FDF36E37880B2\": [\"type\": \"string\", \"title\":"
+        - generic:
+          - text: "\""
+          - generic: 行
+          - generic: 政
+          - generic: 区
+          - text: "\""
+        - text: ",\"enum\": disEnum],"
+      - generic:
+        - text: "\"0B467706B1FE4260AFB035A9672E789F\": [\"type\": \"string\", \"title\":"
+        - generic:
+          - text: "\""
+          - generic: 状
+          - generic: 态
+          - text: "\""
+        - text: ",\"default\": \"0\"]"
+      - generic: "],"
+      - generic: "form: ["
+      - generic: "[\"key\": \"68728EB8B3E2410E8597A9DF3E2FC32D\", \"htmlClass\": \"col-lg-3\"],"
+      - generic: "[\"key\": \"949B755976194D178FB9D3C974119D04\", \"htmlClass\": \"col-lg-3\"],"
+      - generic: "["
+      - generic: "\"key\": \"5558B7F1336C46D2931DFA6329CE91C7\","
+      - generic: "\"htmlClass\": \"col-lg-3\","
+      - generic: "\"fieldHtmlClass\": \"select2-editable-dropdown-options\","
+      - generic:
+        - text: "\"titleMap\": cityTitleMap"
+        - generic:
+          - text: //
+          - generic: 在
+          - text: form
+          - generic: 中
+          - generic: 配
+          - generic: 置
+          - text: titleMap
+      - generic: "],"
+      - generic: "[\"key\": \"C46EEE2D14FC486E8E5FDF36E37880B2\", \"htmlClass\": \"col-lg-3\",\"fieldHtmlClass\": \"select2-editable-dropdown-options\",\"titleMap\": disTitleMap],"
+      - generic: "[\"key\": \"0B467706B1FE4260AFB035A9672E789F\", \"htmlClass\": \"col-lg-3\"],"
+      - generic: "["
+      - generic: "\"type\": \"actions\","
+      - generic: "\"items\": ["
+      - generic: "["
+      - generic: "\"type\": \"actions\","
+      - generic: "\"items\": ["
+      - generic:
+        - text: "[\"type\": \"submit\", \"title\":"
+        - generic:
+          - text: "\""
+          - generic: 搜
+          - generic: 索
+          - text: "\""
+        - text: ", \"htmlClass\": \"btn-sm m-t-n-xs btn-lg btn-block\"]"
+      - generic: "],"
+      - generic: "\"htmlClass\": \"col-md-1 text-right\""
+      - generic: "]"
+      - generic: "],"
+      - generic: "\"htmlClass\": \"row col-lg-12 grid-buttno-div-row-right\""
+      - generic: "]"
+      - generic: "]"
+      - generic: "]"
+      - generic: "}"
