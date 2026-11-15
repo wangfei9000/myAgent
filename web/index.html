@@ -3,47 +3,39 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Agent 自动化</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap">
+  <meta name="theme-color" content="#f6f8fb">
+  <title>Agent 工作台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/app.css">
 </head>
 <body>
-  <div class="app">
-    <aside class="side">
-      <header class="brand">
-        <p class="eyebrow">工作区 Agent</p>
-        <h1>自动化任务</h1>
-        <p class="status" id="status" role="status">正在连接</p>
-        <!--<p class="hint">一次只跑一个任务。执行过程、结果和截图显示在右侧。</p>-->
-      </header>
-
-      <form id="task-form">
-        <label for="provider">大模型服务</label>
-        <select id="provider" name="provider" required></select>
-
-        <label for="message">任务</label>
-        <textarea id="message" name="message" required placeholder="先登录，然后打开建筑物菜单，搜索小区并打开详情，返回小区 id"></textarea>
-
-        <div class="actions">
-          <button id="start" type="submit">开始执行</button>
-          <button id="reset" type="button">清空对话</button>
-        </div>
-      </form>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div><div><p class="brand-name">Agent Flow</p><p class="brand-caption">自动化工作台</p></div></div>
+      <div class="side-divider"></div><div class="side-label">工作空间</div>
+      <nav class="side-nav" aria-label="主导航">
+        <a class="nav-item active" href="#task-form"><span class="nav-icon">✦</span>新建任务</a>
+        <a class="nav-item" href="#activity"><span class="nav-icon">◷</span>执行记录</a>
+        <a class="nav-item" href="#screens"><span class="nav-icon">▧</span>页面截图</a>
+      </nav>
+      <div class="sidebar-footer"><div class="connection-dot"><i></i><span>本地运行环境</span></div><p>任务数据保存在当前工作区</p></div>
     </aside>
-
-    <main class="work" aria-live="polite">
-      <article class="panel">
-        <h2>执行过程</h2>
-        <pre id="log">还没有任务。</pre>
-      </article>
-      <article class="panel">
-        <h2>结果</h2>
-        <div id="reply" class="reply">结果会显示在这里。</div>
-      </article>
-      <article class="panel">
-        <h2>页面截图</h2>
-        <div id="shots" class="shots"></div>
-      </article>
+    <main class="main-content" aria-live="polite">
+      <header class="topbar"><div><p class="breadcrumb">工作空间 <span>/</span> 自动化任务</p><h1>任务控制台</h1></div><div class="topbar-status"><span class="status-dot"></span><span id="status" role="status">正在连接</span></div></header>
+      <section class="welcome-card"><div class="welcome-copy"><span class="section-kicker">AUTOMATION WORKSPACE</span><h2>让 Agent 替你完成重复工作</h2><p>描述你想完成的任务，Agent 会自动操作浏览器并将过程、结果和截图整理在这里。</p></div><div class="welcome-orbit" aria-hidden="true"><div class="orbit-ring"></div><div class="orbit-core">✦</div></div></section>
+      <div class="dashboard-grid">
+        <section class="panel task-panel" id="task-form"><div class="panel-heading"><div><span class="panel-number">01</span><h2>配置任务</h2></div><span class="panel-help">准备好后开始执行</span></div>
+          <form><label for="provider">模型服务</label><div class="select-wrap"><select id="provider" name="provider" required></select><span>⌄</span></div><label for="message">任务描述</label><textarea id="message" name="message" required placeholder="例如：登录系统，打开建筑物菜单，搜索小区并打开详情，返回小区 ID"></textarea><p class="field-hint"><span>⌘</span> 描述越具体，Agent 越容易准确完成任务</p><div class="actions"><button id="start" type="submit"><span>开始执行</span><b>→</b></button><button id="reset" type="button" class="secondary">清空对话</button></div></form>
+        </section>
+        <section class="panel activity-panel" id="activity"><div class="panel-heading"><div><span class="panel-number">02</span><h2>执行过程</h2></div><span class="live-label"><i></i>实时日志</span></div><pre id="log">还没有任务。等待你的指令…</pre></section>
+      </div>
+      <div class="result-grid">
+        <section class="panel result-panel"><div class="panel-heading"><div><span class="panel-number">03</span><h2>任务结果</h2></div><span class="result-label">OUTPUT</span></div><div id="reply" class="reply">完成任务后，结果会显示在这里。</div></section>
+        <section class="panel screenshots-panel" id="screens"><div class="panel-heading"><div><span class="panel-number">04</span><h2>页面截图</h2></div><span class="result-label">CAPTURES</span></div><div id="shots" class="shots"><p>执行任务后，页面截图会显示在这里。</p></div></section>
+      </div>
+      <footer class="page-footer">Agent Flow <span>·</span> 让每一次自动化都更清晰</footer>
     </main>
   </div>
   <script src="/app.js"></script>

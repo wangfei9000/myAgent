@@ -1,6 +1,6 @@
 const providerSelect = document.querySelector("#provider");
 const messageInput = document.querySelector("#message");
-const form = document.querySelector("#task-form");
+const form = document.querySelector(".task-panel form");
 const startButton = document.querySelector("#start");
 const resetButton = document.querySelector("#reset");
 const statusNode = document.querySelector("#status");
@@ -11,7 +11,7 @@ const shotsNode = document.querySelector("#shots");
 const PERMISSION = "default";
 const MAX_ROUNDS = 100;
 
-let polling = null;
+let stream = null;
 let stickToBottom = true;
 
 function setStatus(text, kind) {
@@ -96,17 +96,21 @@ async function readJson(response) {
 async function refreshRun() {
   const run = await readJson(await fetch("/api/run"));
   renderRun(run);
-  if (!run.running && polling) {
-    clearInterval(polling);
-    polling = null;
-  }
 }
 
 function watchRun() {
-  if (polling) clearInterval(polling);
-  polling = setInterval(() => {
-    refreshRun().catch((error) => setStatus(error.message, "error"));
-  }, 1000);
+  if (stream) stream.close();
+  stream = new EventSource("/api/run/stream");
+  stream.addEventListener("run", (event) => {
+    try {
+      renderRun(JSON.parse(event.data));
+    } catch (error) {
+      setStatus("进度数据格式错误", "error");
+    }
+  });
+  stream.onerror = () => {
+    setStatus("正在重连进度通道", "error");
+  };
 }
 
 form.addEventListener("submit", async (event) => {
@@ -126,7 +130,6 @@ form.addEventListener("submit", async (event) => {
         max_rounds: MAX_ROUNDS,
       }),
     }));
-    await refreshRun();
     watchRun();
   } catch (error) {
     setStatus(error.message, "error");
@@ -165,7 +168,7 @@ async function boot() {
       const label = providerLabel(status.provider);
       setStatus(label ? `空闲 · ${label}` : "空闲");
     }
-    if (run.running) watchRun();
+    watchRun();
   } catch (error) {
     setStatus(error.message, "error");
   }

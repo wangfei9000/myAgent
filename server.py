@@ -27,6 +27,8 @@ from agent_runtime.util import load_dotenv
 WEB_DIR = script_dir() / "web"
 CHAT_LOCK = threading.Lock()
 STATE_LOCK = threading.Lock()
+STATE_CHANGED = threading.Condition(STATE_LOCK)
+STATE_VERSION = 0
 STATE = {
     "running": False,
     "started": False,
@@ -164,7 +166,8 @@ def start_chat(
         return "未知权限模式"
     if max_rounds is not None and (max_rounds < 1 or max_rounds > 1000):
         return "轮次需要在 1 到 1000 之间"
-    with STATE_LOCK:
+    global STATE_VERSION
+    with STATE_CHANGED:
         if STATE["running"]:
             return "已有任务在执行"
         provider_error = use_provider(agent, provider)
@@ -180,19 +183,28 @@ def start_chat(
         STATE["started_at"] = time.time()
         STATE["reply"] = ""
         STATE["error"] = ""
+        STATE_VERSION += 1
+        STATE_CHANGED.notify_all()
 
     def work() -> None:
+        global STATE_VERSION
         try:
             with CHAT_LOCK:
                 reply = agent.chat(message, skill=skill)
-            with STATE_LOCK:
+            with STATE_CHANGED:
                 STATE["reply"] = reply
+                STATE_VERSION += 1
+                STATE_CHANGED.notify_all()
         except Exception as exc:
-            with STATE_LOCK:
+            with STATE_CHANGED:
                 STATE["error"] = str(exc)
+                STATE_VERSION += 1
+                STATE_CHANGED.notify_all()
         finally:
-            with STATE_LOCK:
+            with STATE_CHANGED:
                 STATE["running"] = False
+                STATE_VERSION += 1
+                STATE_CHANGED.notify_all()
 
     threading.Thread(target=work, daemon=True).start()
     return None
@@ -240,6 +252,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/run":
             self._json(200, public_run(agent))
             return
+        if path == "/api/run/stream":
+            self._run_stream(agent)
+            return
         if path.startswith("/screenshots/"):
             self._screenshot(path.removeprefix("/screenshots/"))
             return
@@ -283,7 +298,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(202, {"ok": True})
             return
         if path == "/api/reset":
-            with STATE_LOCK:
+            global STATE_VERSION
+            with STATE_CHANGED:
                 if STATE["running"]:
                     self._json(409, {"error": "任务执行中，不能清空"})
                     return
@@ -292,6 +308,8 @@ class Handler(BaseHTTPRequestHandler):
                 STATE["reply"] = ""
                 STATE["error"] = ""
                 STATE["log_from"] = len(agent.logs)
+                STATE_VERSION += 1
+                STATE_CHANGED.notify_all()
             self._json(200, {"ok": True})
             return
         self._json(404, {"error": "没有这个接口"})
@@ -307,6 +325,39 @@ class Handler(BaseHTTPRequestHandler):
             self._json(404, {"error": "没有这张截图"})
             return
         self._bytes(200, "image/png", path.read_bytes())
+
+    def _run_stream(self, agent) -> None:
+        """通过 SSE 推送任务状态，避免浏览器反复请求 /api/run。"""
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control", "no-cache, no-transform")
+        self.send_header("Connection", "keep-alive")
+        self.send_header("X-Accel-Buffering", "no")
+        self.end_headers()
+
+        last_signature = None
+        last_heartbeat = time.monotonic()
+        try:
+            while True:
+                payload = public_run(agent)
+                signature = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+                now = time.monotonic()
+                if signature != last_signature:
+                    data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+                    self.wfile.write(b"event: run\n")
+                    self.wfile.write(b"data: " + data + b"\n\n")
+                    self.wfile.flush()
+                    last_signature = signature
+                    last_heartbeat = now
+                elif now - last_heartbeat >= 15:
+                    self.wfile.write(b": heartbeat\n\n")
+                    self.wfile.flush()
+                    last_heartbeat = now
+
+                with STATE_CHANGED:
+                    STATE_CHANGED.wait(timeout=0.5)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            return
 
     def _file(self, url_path: str) -> None:
         rel = unquote(url_path).lstrip("/") or "index.html"
