@@ -1,0 +1,220 @@
+你是一个负责维护估值系统配置的自动化 Agent。请根据当前登录系统，把“建筑物 → 小区信息”菜单所依赖的全部 Layout 配置导出为一个可迁移的配置文件，以便在另一套相同系统中导入和复建。
+
+## 目标
+
+完整迁移“小区信息”菜单及其关联的 Layout 配置。不要只导出菜单本身；需要递归梳理并导出该页面依赖的配置对象和关联关系。
+
+截图提供的线索如下，实际执行时请在当前系统中重新核实，不要把截图中的 ID 当作目标系统的固定 ID：
+
+- 菜单标题：小区信息
+- 父菜单：建筑物
+- 菜单 URL 示例：`/flexObject/index?layoutCode=F5E61DEC401C4008AF3F5F38A7A2FEEA`
+- Layout 标题示例：小区 Index
+- Layout 类型：FlexObject
+- Layout 下有一个 Panel，名称为“建筑物”
+- Panel 类型：SearchInnerGrid
+- Panel 下有 Field、Data、Search Field 三类组件
+- Panel 配置了 Create、批量新增、价格补充等按钮
+- 用户权限截图显示可能涉及 Layout、Component、DataProvider Interface 等权限；这仅是核查线索，不代表需要修改权限
+
+## 执行原则
+
+1. 先只读盘点、查询和导出，不修改现有配置。
+2. 优先使用系统提供的导出功能或只读 API；不得从页面截图推测缺失的配置内容。
+3. 只有在系统没有导出功能时，才通过页面配置详情或只读接口逐项收集。
+4. 不得将登录凭证、Cookie、Token、密码、个人敏感信息或无关业务数据写入导出文件。
+5. 导出配置脚本时保留其原始文本和执行语义；不要擅自改写、清理或执行脚本。
+6. 不要导出小区业务记录。只导出页面定义、组件、按钮及其配置和必要引用。
+7. 遇到截图无法确认、页面没有展示或权限不足的内容，记录为“未确认”或“无法读取”，不要自行补值。
+8. 迁移到另一套系统前，先进行预检查和差异报告；未经用户明确要求，不执行导入、覆盖、删除或权限变更。
+9. 导入时必须先解析并校验整个文件。发现缺失依赖、同名冲突、代码字段冲突或版本不匹配时，停止写入并报告，不得部分导入。
+10. 所有写操作应保持可追踪；如果目标系统支持事务或回滚，应使用并记录。
+
+## 需要递归导出的对象
+
+围绕“小区信息”菜单，检查并导出以下对象及其关系。按系统实际支持情况记录字段；保留原始系统字段名和值。
+
+### A. 菜单 Menu
+
+至少记录：
+
+- Name / Code
+- Title
+- URL
+- Icon
+- Order Number
+- Status
+- Parent Menu
+- 关联的 Layout
+- Description（如有）
+
+### B. Layout
+
+至少记录：
+
+- Name
+- Code
+- Type
+- Title
+- Description
+- Product / Territory（如有）
+- 所属 Panel 列表及显示顺序
+
+### C. Panel
+
+至少记录：
+
+- Name
+- Code
+- Panel Type
+- Template Name
+- Product / Territory（如有）
+- Display Order
+- 关联组件和按钮
+
+### D. Panel 下的组件
+
+递归记录每个组件的：
+
+- Name / Code
+- Component 类型
+- 配置正文、脚本或表达式
+- 引用的 Layout、Data、DataProvider、接口或其他组件
+- 创建/修改时间等可用于识别版本的元数据（系统提供时）
+
+截图中的组件类别包含 Field、Data、Search Field。需要继续进入每个组件详情，不能只记录列表中的名称和类型。
+
+### E. Panel Button
+
+记录每个按钮的：
+
+- Template Name / 展示名称
+- Type
+- Link
+- Controller Name
+- Action Name
+- Component Name
+- Icon
+- Color
+- New Page
+- Display Order
+- Condition 脚本
+- Component 脚本或按钮执行内容
+- 所引用的组件、Layout、API、Workflow 或其他配置
+
+### F. 其他必要依赖
+
+沿着上述对象中的引用继续递归检查，直到没有新的配置依赖为止。可能包括：
+
+- DataProvider / 数据接口
+- 其他 Layout 或 FlexObject
+- 按钮引用的组件
+- API 或 Workflow
+- 运行所需的字典、枚举、模板或系统级配置
+
+每个依赖都要注明：
+- 对象类型
+- 系统内 Name / Code
+- 被哪个对象引用
+- 是否已纳入导出
+- 若未纳入，原因及目标系统的前置条件
+
+### G. 权限（只记录，不自动修改）
+
+核查该页面正常显示和操作所需的角色、权限标识及菜单授权关系。截图线索包括 `ROLE_LAYOUT_EDIT`、`ROLE_COMPONENT_EDIT`、`ROLE_DATAPROVIDER_INTERFACE_EDIT`，但这些可能只是配置维护权限，不一定是普通使用者访问“小区信息”页面所需权限。
+
+请区分：
+- 配置管理员维护权限
+- 用户访问菜单的权限
+- 页面按钮执行权限
+
+导出权限配置时只记录必要的权限标识和关联关系，不包含用户密码、Token 等凭证；不要在目标系统自动授予权限。
+
+## 导出文件格式
+
+生成一个 UTF-8 编码的 JSON 文件，文件名建议为：
+
+`community-info-layout-export.json`
+
+文件至少包含以下结构：
+
+{
+  "format": "layout-migration",
+  "formatVersion": 1,
+  "exportedAt": "<导出时间>",
+  "sourceSystem": {
+    "systemName": "<系统标识>",
+    "baseUrl": "<脱敏后的系统地址>",
+    "product": "<产品/租户信息，如可确认>",
+    "applicationVersion": "<版本，如可确认>"
+  },
+  "scope": {
+    "menuTitle": "小区信息",
+    "parentMenuTitle": "建筑物",
+    "includeBusinessRecords": false
+  },
+  "objects": {
+    "menus": [],
+    "layouts": [],
+    "panels": [],
+    "components": [],
+    "buttons": [],
+    "dataProviders": [],
+    "apis": [],
+    "workflows": [],
+    "otherDependencies": [],
+    "permissions": []
+  },
+  "relationships": [],
+  "unresolvedDependencies": [],
+  "warnings": [],
+  "verification": {
+    "allObjectsRead": false,
+    "allReferencesResolved": false,
+    "scriptsPreservedVerbatim": false,
+    "businessRecordsExcluded": true
+  }
+}
+
+要求：
+
+- 只加入实际查到的字段和值；不适用或无法读取的字段要明确标注，不要编造。
+- 配置脚本保留原文。若脚本内容过长，可放入同目录独立文件，并在 JSON 中写入相对路径、文件名和 SHA-256 校验值。
+- 关系单独列出，至少包含 `from`、`relation`、`to`。
+- 对系统生成的 ID、Code 做标记，区分“源系统标识”和“可迁移业务标识”；导入时不得默认复用目标系统的数据库主键。
+- 导出前后计算文件校验值，并在报告中记录。
+- 文件中不得包含小区列表等业务数据行。
+
+## 导出后的检查
+
+导出完成后逐项检查：
+
+1. 菜单是否准确指向目标 Layout Code。
+2. Layout 是否包含其 Panel，顺序是否完整。
+3. 每个 Panel 是否包含全部组件和按钮。
+4. 脚本和表达式是否完整保存，引用的 Code 是否已解析。
+5. 是否错误包含业务数据、凭证或无关个人信息。
+6. 是否存在未解析依赖、目标系统差异或版本限制。
+7. JSON 是否可解析，SHA-256 是否与文件内容一致。
+
+## 跨系统导入流程（仅在用户之后明确要求导入时执行）
+
+1. 读取迁移文件并验证格式版本、文件校验值及必填字段。
+2. 在目标系统进行只读预检查：核对产品版本、对象类型、引用依赖、同名对象和 Code 冲突。
+3. 输出导入计划和差异清单。明确哪些对象会新建、复用或需要人工处理。
+4. 如果存在无法安全解决的冲突、缺失依赖或版本不兼容，停止导入并说明原因。
+5. 只有用户明确授权导入后，才创建或更新目标对象。
+6. 按依赖顺序导入：基础依赖 → DataProvider/API/Workflow → 组件 → Panel → Layout → 菜单；权限只做报告，除非用户另行明确要求。
+7. 建立目标系统新生成的 ID/Code 与源配置标识的映射，确保引用指向目标系统对象。
+8. 导入后只读验证：检查菜单 URL、Layout、Panel、组件、按钮、脚本引用和显示顺序。
+9. 输出结果报告：新建/复用/跳过的对象、标识映射、校验结果、未解决事项和回滚信息。
+
+## 当前任务的输出
+
+当前只进行盘点和导出，不导入、不修改系统配置或权限。完成后请提供：
+
+1. 导出文件的完整路径。
+2. 导出对象数量，按类型统计。
+3. 未解析依赖和警告。
+4. 校验结果。
+5. 若无法直接生成文件，说明缺少的系统访问能力或信息，并先给出可人工补全的清单。

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent 自动化</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Fira+Sans:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <p class="eyebrow">工作区 Agent</p>
+      <h1>自动化任务</h1>
+    </div>
+    <p class="status" id="status" role="status">正在连接</p>
+  </header>
+
+  <main class="layout">
+    <form id="task-form" class="panel">
+      <label for="skill">技能</label>
+      <select id="skill" name="skill">
+        <option value="">不指定，由模型自己选</option>
+      </select>
+      <p class="hint" id="skill-hint"></p>
+
+      <div class="row">
+        <div>
+          <label for="permission">权限</label>
+          <select id="permission" name="permission">
+            <option value="plan">plan · 只读</option>
+            <option value="default">default · 改文件和浏览器</option>
+            <option value="accept-edits">accept-edits · 可执行命令</option>
+          </select>
+        </div>
+        <div>
+          <label for="rounds">最大轮次</label>
+          <input id="rounds" name="max_rounds" type="number" min="1" max="80" value="12" required>
+        </div>
+      </div>
+
+      <label for="message">任务</label>
+      <textarea id="message" name="message" rows="8" required placeholder="先登录，然后打开建筑物菜单，搜索小区并打开详情，返回小区 id"></textarea>
+
+      <div class="actions">
+        <button id="start" type="submit">开始执行</button>
+        <button id="reset" type="button">清空对话</button>
+      </div>
+      <p class="hint">浏览器类技能需要 default 或 accept-edits。一次只跑一个任务，过程中的工具调用会显示在右侧。</p>
+    </form>
+
+    <section class="work" aria-live="polite">
+      <article class="panel">
+        <h2>执行过程</h2>
+        <pre id="log">还没有任务。</pre>
+      </article>
+      <article class="panel">
+        <h2>结果</h2>
+        <div id="reply" class="reply">结果会显示在这里。</div>
+      </article>
+      <article class="panel">
+        <h2>页面截图</h2>
+        <div id="shots" class="shots"></div>
+      </article>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

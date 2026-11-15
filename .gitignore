@@ -1,0 +1,6 @@
+node_modules/
+.playwright-mcp/
+logs/
+screenshots/
+.venv/
+__pycache__/
