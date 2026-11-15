@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,10 +11,8 @@ from typing import Any, Callable
 from . import browser, skill_exec, subagent, workspace
 from .config import (
     MAX_TOOL_CHARS,
-    OPENAI_API_KEY,
-    OPENAI_BASE_URL,
-    OPENAI_MODEL,
     PERMISSION_MODES,
+    PROVIDERS,
     READ_ONLY_TOOLS,
 )
 from .mcp import McpManager, PLAYWRIGHT_RESULT_CHARS
@@ -456,12 +453,11 @@ def create_agent(
         log_path = None
         if log_model:
             log_path = root_path / "logs" / "model.log"
+        provider = PROVIDERS[0]
         client = OpenAIClient(
-            base_url=base_url or os.environ.get("OPENAI_BASE_URL") or OPENAI_BASE_URL,
-            api_key=api_key if api_key is not None else (
-                os.environ.get("OPENAI_API_KEY") or OPENAI_API_KEY or "ollama"
-            ),
-            model=model or os.environ.get("OPENAI_MODEL") or OPENAI_MODEL,
+            base_url=base_url or provider["base_url"],
+            api_key=api_key if api_key is not None else provider["api_key"],
+            model=model or provider["model"],
             timeout=timeout,
             log_path=log_path,
         )

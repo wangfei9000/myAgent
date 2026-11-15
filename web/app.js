@@ -1,7 +1,4 @@
-const skillSelect = document.querySelector("#skill");
-const skillHint = document.querySelector("#skill-hint");
-const permissionSelect = document.querySelector("#permission");
-const roundsInput = document.querySelector("#rounds");
+const providerSelect = document.querySelector("#provider");
 const messageInput = document.querySelector("#message");
 const form = document.querySelector("#task-form");
 const startButton = document.querySelector("#start");
@@ -11,7 +8,9 @@ const logNode = document.querySelector("#log");
 const replyNode = document.querySelector("#reply");
 const shotsNode = document.querySelector("#shots");
 
-const skills = new Map();
+const PERMISSION = "default";
+const MAX_ROUNDS = 100;
+
 let polling = null;
 let stickToBottom = true;
 
@@ -20,22 +19,24 @@ function setStatus(text, kind) {
   statusNode.className = "status" + (kind ? " " + kind : "");
 }
 
-function renderSkills(items) {
-  const current = skillSelect.value;
-  skillSelect.replaceChildren(new Option("不指定，由模型自己选", ""));
-  skills.clear();
-  for (const skill of items) {
-    skills.set(skill.name, skill);
-    const option = new Option(skill.name, skill.name);
-    skillSelect.append(option);
-  }
-  if (skills.has(current)) skillSelect.value = current;
-  showSkillHint();
+const providers = new Map();
+
+function providerLabel(id) {
+  const item = providers.get(id);
+  return item ? item.label : "";
 }
 
-function showSkillHint() {
-  const skill = skills.get(skillSelect.value);
-  skillHint.textContent = skill ? (skill.description || skill.when || "") : "不指定技能时，运行时会按任务内容检索。";
+function renderProviders(items, current) {
+  const selected = providerSelect.value || current;
+  providerSelect.replaceChildren();
+  providers.clear();
+  for (const item of items || []) {
+    if (!item || !item.id || providers.has(item.id)) continue;
+    providers.set(item.id, item);
+    providerSelect.append(new Option(item.label, item.id));
+  }
+  if (providers.has(selected)) providerSelect.value = selected;
+  else if (current && providers.has(current)) providerSelect.value = current;
 }
 
 function renderRun(run) {
@@ -74,10 +75,13 @@ function renderRun(run) {
       shotsNode.append(link);
     }
   }
-  startButton.disabled = run.running;
-  resetButton.disabled = run.running;
-  startButton.textContent = run.running ? "执行中" : "开始执行";
-  if (run.running) setStatus("执行中", "running");
+  const busy = run.running;
+  startButton.disabled = busy;
+  resetButton.disabled = busy;
+  providerSelect.disabled = busy;
+  messageInput.disabled = busy;
+  startButton.textContent = busy ? "执行中" : "开始执行";
+  if (busy) setStatus("执行中", "running");
   else if (run.error) setStatus("失败", "error");
   else if (run.reply) setStatus("已完成");
   else setStatus(run.history ? `空闲 · 对话 ${run.history} 条` : "空闲");
@@ -107,6 +111,8 @@ function watchRun() {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const message = messageInput.value.trim();
+  if (!message || !providerSelect.value) return;
   startButton.disabled = true;
   setStatus("正在开始", "running");
   try {
@@ -114,10 +120,10 @@ form.addEventListener("submit", async (event) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message: messageInput.value.trim(),
-        skill: skillSelect.value,
-        permission: permissionSelect.value,
-        max_rounds: Number(roundsInput.value),
+        message,
+        provider: providerSelect.value,
+        permission: PERMISSION,
+        max_rounds: MAX_ROUNDS,
       }),
     }));
     await refreshRun();
@@ -143,24 +149,21 @@ resetButton.addEventListener("click", async () => {
   }
 });
 
-skillSelect.addEventListener("change", showSkillHint);
 logNode.addEventListener("scroll", () => {
   stickToBottom = logNode.scrollHeight - logNode.scrollTop - logNode.clientHeight < 40;
 });
 
 async function boot() {
   try {
-    const [status, skillPayload, run] = await Promise.all([
+    const [status, run] = await Promise.all([
       readJson(await fetch("/api/status")),
-      readJson(await fetch("/api/skills")),
       readJson(await fetch("/api/run")),
     ]);
-    permissionSelect.value = status.permission;
-    roundsInput.value = String(status.max_rounds);
-    renderSkills(skillPayload.skills);
+    renderProviders(status.providers, status.provider);
     renderRun(run);
     if (!run.running && !run.error && !run.reply) {
-      setStatus(`${status.model} · ${status.permission}`);
+      const label = providerLabel(status.provider);
+      setStatus(label ? `空闲 · ${label}` : "空闲");
     }
     if (run.running) watchRun();
   } catch (error) {

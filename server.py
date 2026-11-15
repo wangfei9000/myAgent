@@ -21,7 +21,7 @@ from urllib.parse import unquote, urlparse
 
 from agent_runtime.agent import create_agent
 from agent_runtime.browser import archive_previous_run
-from agent_runtime.config import PERMISSION_MODES, script_dir
+from agent_runtime.config import PERMISSION_MODES, PROVIDERS, script_dir
 from agent_runtime.util import load_dotenv
 
 WEB_DIR = script_dir() / "web"
@@ -34,6 +34,7 @@ STATE = {
     "started_at": 0.0,
     "reply": "",
     "error": "",
+    "origin": {},
 }
 SHOT_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,80}\.png$")
 
@@ -102,21 +103,77 @@ def public_run(agent) -> dict:
     }
 
 
-def start_chat(agent, message: str, skill: str | None, permission: str | None, max_rounds: int | None) -> str | None:
+def match_provider(base_url: str, model: str) -> str:
+    text = f"{base_url} {model}".lower()
+    if "11434" in text or "ollama" in text or "qwen" in text:
+        return "ollama"
+    return "deepseek"
+
+
+def current_provider(agent) -> str:
+    client = agent.client
+    return match_provider(
+        str(getattr(client, "base_url", "") or ""),
+        str(getattr(client, "model", "") or ""),
+    )
+
+
+def listed_providers() -> list[dict[str, str]]:
+    return [{"id": item["id"], "label": item["label"]} for item in PROVIDERS]
+
+
+def use_provider(agent, provider_id: str | None) -> str | None:
+    if provider_id is None:
+        return None
+    provider_id = str(provider_id).strip().lower()
+    if not provider_id:
+        return None
+    presets = {item["id"]: item for item in PROVIDERS}
+    if provider_id not in presets:
+        return "未知服务"
+    client = agent.client
+    if not hasattr(client, "model"):
+        return "当前运行时不能切换服务"
+    origin = STATE.get("origin") or {}
+    origin_id = match_provider(str(origin.get("base_url") or ""), str(origin.get("model") or ""))
+    if provider_id == origin_id and origin.get("model"):
+        client.model = origin["model"]
+        if origin.get("base_url") and hasattr(client, "base_url"):
+            client.base_url = origin["base_url"]
+        if "api_key" in origin and hasattr(client, "api_key"):
+            client.api_key = origin["api_key"]
+        return None
+    preset = presets[provider_id]
+    client.model = preset["model"]
+    if hasattr(client, "base_url"):
+        client.base_url = str(preset["base_url"]).rstrip("/")
+    if hasattr(client, "api_key"):
+        client.api_key = preset.get("api_key", "")
+    return None
+
+
+def start_chat(
+    agent,
+    message: str,
+    skill: str | None,
+    permission: str | None,
+    max_rounds: int | None,
+    provider: str | None = None,
+) -> str | None:
     if permission is not None and permission not in PERMISSION_MODES:
         return "未知权限模式"
-    if max_rounds is not None and (max_rounds < 1 or max_rounds > 80):
-        return "轮次需要在 1 到 80 之间"
+    if max_rounds is not None and (max_rounds < 1 or max_rounds > 1000):
+        return "轮次需要在 1 到 1000 之间"
     with STATE_LOCK:
         if STATE["running"]:
             return "已有任务在执行"
-    if permission is not None:
-        agent.permission_mode = permission
-    if max_rounds is not None:
-        agent.max_rounds = max_rounds
-    with STATE_LOCK:
-        if STATE["running"]:
-            return "已有任务在执行"
+        provider_error = use_provider(agent, provider)
+        if provider_error:
+            return provider_error
+        if permission is not None:
+            agent.permission_mode = permission
+        if max_rounds is not None:
+            agent.max_rounds = max_rounds
         STATE["running"] = True
         STATE["started"] = True
         STATE["log_from"] = len(agent.logs)
@@ -156,6 +213,8 @@ class Handler(BaseHTTPRequestHandler):
                 200,
                 {
                     "model": getattr(client, "model", ""),
+                    "provider": current_provider(agent),
+                    "providers": listed_providers(),
                     "permission": agent.permission_mode,
                     "max_rounds": agent.max_rounds,
                     "running": STATE["running"],
@@ -202,6 +261,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(400, {"error": "缺少 message"})
                 return
             skill = str(body.get("skill") or "").strip() or None
+            provider = body.get("provider")
+            provider = str(provider) if provider else None
             permission = body.get("permission")
             permission = str(permission) if permission else None
             rounds = body.get("max_rounds")
@@ -212,7 +273,7 @@ class Handler(BaseHTTPRequestHandler):
                 except (TypeError, ValueError):
                     self._json(400, {"error": "轮次不是整数"})
                     return
-            error = start_chat(agent, message, skill, permission, max_rounds)
+            error = start_chat(agent, message, skill, permission, max_rounds, provider)
             if error == "已有任务在执行":
                 self._json(409, {"error": error})
                 return
@@ -292,6 +353,12 @@ def main(argv: list[str] | None = None) -> int:
         log_model=args.log_model,
     )
     Handler.agent = agent
+    client = agent.client
+    STATE["origin"] = {
+        "model": getattr(client, "model", ""),
+        "base_url": getattr(client, "base_url", ""),
+        "api_key": getattr(client, "api_key", ""),
+    }
     server = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"http://{args.host}:{args.port}  工作区 {agent.root}")
     try:

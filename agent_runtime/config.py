@@ -24,9 +24,27 @@ PERMISSION_MODES = ("plan", "default", "accept-edits")
 #OPENAI_BASE_URL = "http://192.168.1.16:11434/v1"
 #OPENAI_MODEL = "qwen3.8:27b"
 
-OPENAI_BASE_URL = "https://api.deepseek.com"
-OPENAI_API_KEY = "sk-5c9ecce2ae9846af9cb302baae22d54d"
-OPENAI_MODEL = "deepseek-flash"
+#OPENAI_BASE_URL = "https://api.deepseek.com"
+#OPENAI_API_KEY = "sk-5c9ecce2ae9846af9cb302baae22d54d"
+#OPENAI_MODEL = "deepseek-flash"
+
+# 页面上的服务。接口、模型和密钥都写在这里，启动时用第一项。
+PROVIDERS = (
+    {
+        "id": "deepseek",
+        "label": "deepseek-flash",
+        "base_url": "https://api.deepseek.com",
+        "model": "deepseek-flash",
+        "api_key": "sk-5c9ecce2ae9846af9cb302baae22d54d",
+    },
+    {
+        "id": "ollama",
+        "label": "ollama-qwen3.5:9b",
+        "base_url": "http://127.0.0.1:11434/v1",
+        "model": "qwen3.5:9b",
+        "api_key": "123456",  # 只要不为空就行
+    },
+)
 
 
 def script_dir() -> Path:

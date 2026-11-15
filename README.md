@@ -15,10 +15,11 @@ python3 server.py
 默认监听 `http://127.0.0.1:8080`。常用参数：
 
 ```bash
-python3 server.py --host 127.0.0.1 --port 8080 --permission default
-python3 server.py --model deepseek-flash --base-url https://api.deepseek.com --api-key "$OPENAI_API_KEY"
-python3 server.py --no-mcp
-python3 server.py --root /path/to/workspace --log-model
+python server.py --host 127.0.0.1 --port 8080 --permission default
+python server.py --model deepseek-flash --base-url https://api.deepseek.com --api-key "$OPENAI_API_KEY"
+python server.py --no-mcp
+python server.py --root /path/to/workspace --log-model
+python -m agent_runtime.cli --log-model --max-rounds 40 --skill oem3_page '先进行登录，然后点击建筑物菜单，搜索五栋大楼小区，然后打开小区详情，返回小区id'
 ```
 
 | 参数 | 默认 | 作用 |
@@ -53,7 +54,7 @@ python -m agent_runtime.cli --resume
 
 ## HTTP
 
-打开 `http://127.0.0.1:8080` 就是任务页面。可以选择技能、权限和最大轮次，提交后右侧会刷新执行过程、最终结果，以及这次任务新产生的页面截图。
+打开 `http://127.0.0.1:8080` 就是任务页面。左侧选择服务（DeepSeek 或 Ollama）、填写任务，然后开始执行或清空对话。权限固定为 `default`，最大轮次固定为 100，页面上不显示这两项。右侧刷新执行过程、最终结果，以及这次任务新产生的页面截图。
 
 | 方法 | 路径 | 说明 |
 |---|---|---|

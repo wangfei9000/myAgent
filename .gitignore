@@ -4,3 +4,4 @@ logs/
 screenshots/
 .venv/
 __pycache__/
+exports/
