@@ -119,7 +119,7 @@ Shell 不允许管道、重定向、命令替换，也不允许 `sudo`、`rm` �
 
 每次对话会按问题检索最多 3 个相关技能，只把名称和说明放进上下文。需要完整步骤时，模型再调用 `skill`。
 
-当前项目里有：`project_brief`、`code_review`、`browser`、`shell_script`、`rag_lookup`、`oem3_page`。
+当前项目里有：`project_brief`、`code_review`、`browser`、`shell_script`、`rag_lookup`、`oem3_page`、`docx`、`pg_query`。各技能的用法见文末。
 
 自定义子 Agent 放在工作区的 `agents/*.md`，或用户技能目录旁边的 `agents/*.md`。`explore`、`plan`、`general` 这三个名字保留给内置类型。
 
@@ -166,3 +166,74 @@ Playwright 只把这些工具交给模型：`browser_navigate`、`browser_snapsh
 会话写在工作区的 `sessions/latest.json`。命令行用 `--resume` 恢复。HTTP 启动时不恢复，但对话过程仍会覆盖这份会话文件。
 
 需要 Python 3.10 或更新版本。要用浏览器工具时再装 Node.js。
+
+## 技能怎么用
+
+指定技能有三种方式：命令行加 `--skill 名称`，REPL 里输入 `/skill 名称 任务`，HTTP 请求体里加 `"skill": "名称"`。不指定时，对话会按问题检索最相关的技能。
+
+页面上的权限固定为 `default`。要跑命令的技能请用命令行的 `--accept-edits`。
+
+### project_brief
+
+用正好三句话介绍当前项目：解决什么问题、怎么启动、可以先试什么。先读 `README.md`，用户点了子目录再读那个目录里的说明。只读即可。
+
+```bash
+python -m agent_runtime.cli --plan --skill project_brief "这个项目在做什么"
+```
+
+### code_review
+
+审查工作区里的 Python 文件，先指出会让功能出错的问题。每条写明严重程度、文件和行号、实际后果和改法。没读过的代码不评论。只读即可。
+
+```bash
+python -m agent_runtime.cli --plan --skill code_review "看一下 agent_runtime/workspace.py"
+```
+
+### browser
+
+用 Playwright 打开网页、看页面、点击和填写表单。先打开网址，再看快照，点击和输入都用快照里的 ref。`plan` 不能用。需要本机 Playwright MCP。
+
+```bash
+python -m agent_runtime.cli --skill browser "打开 https://example.com 并说出页面标题"
+```
+
+### shell_script
+
+把脚本先写进工作区，再用一条命令执行，并报告退出码。`run_shell` 不能带换行、管道、重定向或 `bash -c`。需要 `accept-edits`，不能用 `fork`。
+
+```bash
+python -m agent_runtime.cli --accept-edits --skill shell_script "写一个脚本，打印当前目录下的 py 文件数量"
+```
+
+### rag_lookup
+
+只根据 `rag/docs/`、`rag2/docs/`、`rag/SIMPLE_RAG.md`、`rag2/RAG2.md` 回答。先列出文档，再搜索相关句子，回答时引用文件名。资料里没有的内容要明确说没找到。只读即可。
+
+```bash
+python -m agent_runtime.cli --plan --skill rag_lookup "小区资料里怎么写的"
+```
+
+### oem3_page
+
+在 OEM3 上按菜单名查看或配置页面。用 `layoutCode` 区分 Layout，不要把详情页的数字 ID 当成业务地址。未明确确认前只读，不点保存。权限用 `default` 或 `accept-edits`。
+
+```bash
+python -m agent_runtime.cli --skill oem3_page "先登录，再打开建筑物菜单，搜索五栋大楼小区，返回小区 id"
+```
+
+### docx
+
+创建、阅读或修改 Word 文档（`.docx`、`.dotx`）。新建文档写 `docx` 脚本；修改已有文档时先解包 XML，改完再打包。阅读可以用 `pandoc`。生成或改文件需要 `accept-edits`。
+
+```bash
+python -m agent_runtime.cli --accept-edits --skill docx "把 prom_community.txt 做成一份 docx"
+```
+
+### pg_query
+
+用一条只读 SQL 查询 PostgreSQL。连接放在 `DATABASE_URL`（`postgresql://用户:密码@主机:5432/数据库名`），或者 `PGHOST`、`PGPORT`、`PGUSER`、`PGPASSWORD`、`PGDATABASE`。写入语句会在连库前拒绝。需要 `accept-edits`，不能用 `fork`。首次查询若缺少驱动，技能会安装 `psycopg[binary]`。
+
+```bash
+export DATABASE_URL=postgresql://wangfei:ozS6lai9BMyJKg@101.126.157.201:7908/oem3_kps_en
+python -m agent_runtime.cli --accept-edits --skill pg_query "列出 public 下的表"
+```
