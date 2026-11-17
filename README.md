@@ -261,6 +261,7 @@ python -m agent_runtime.cli --accept-edits --skill pdf "抽出 report.pdf 里的
 
 ```bash
 python -m agent_runtime.cli --accept-edits --skill xlsx "按小区名单做一份 xlsx"
+python -m agent_runtime.cli --accept-edits --log-model --max-rounds 99 --skill xlsx '查询数据库，列出前10个表名，然后生成一份 xlsx'
 ```
 
 ### pg_query
