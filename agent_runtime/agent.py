@@ -200,16 +200,25 @@ class Agent:
 子 Agent：explore（只读搜索）、plan（只读计划）、general（继承当前权限，不能再派生子 Agent）。
 MCP 工具会以 mcp__服务器__工具名 出现在工具列表里。"""
 
-    def chat(self, user_text: str, *, augment_skills: bool = True, skill: str | None = None) -> str:
+    def chat(self, user_text: str, *, augment_skills: bool = True, skill: str | list[str] | None = None) -> str:
         self._last_call_signature = ""
         self._consecutive_repeats = 0
         content = user_text
-        if skill:
+        if isinstance(skill, str):
+            skill_names = [part.strip() for part in skill.split(",") if part.strip()]
+        elif isinstance(skill, list):
+            skill_names = [str(part).strip() for part in skill if str(part).strip()]
+        else:
+            skill_names = []
+        if skill_names:
             self.refresh_skills()
-            loaded = skill_exec.execute_skill(self, {"name": skill, "mode": "inline"})
-            if loaded.startswith("没有名为"):
-                raise ValueError(loaded)
-            content = f"{user_text}\n\n{loaded}"
+            loaded_parts = []
+            for name in skill_names:
+                loaded = skill_exec.execute_skill(self, {"name": name, "mode": "inline"})
+                if loaded.startswith("没有名为"):
+                    raise ValueError(loaded)
+                loaded_parts.append(loaded)
+            content = user_text + "\n\n" + "\n\n".join(loaded_parts)
         elif augment_skills:
             self.refresh_skills()
             hint = format_skill_hits(retrieve_skills(self.skills, user_text))

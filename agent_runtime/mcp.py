@@ -254,7 +254,7 @@ class McpManager:
                 str(config["command"]),
                 [str(item) for item in config.get("args") or []],
                 {str(k): str(v) for k, v in (config.get("env") or {}).items()},
-                self.root,
+                script_dir(),
             )
             try:
                 connection.connect()

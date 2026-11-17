@@ -1,6 +1,6 @@
 {
   "provider": "deepseek",
-  "permission": "default",
+  "permission": "accept-edits",
   "max_rounds": 990,
   "timeout": 300
 }

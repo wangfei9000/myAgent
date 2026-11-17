@@ -94,11 +94,11 @@ function formatSize(size) {
   return (size / 1024 / 1024).toFixed(1) + " MB";
 }
 
-function renderCrumbs(path) {
+function renderCrumbs(path, rootName) {
   crumbsNode.replaceChildren();
   const root = document.createElement("button");
   root.type = "button";
-  root.textContent = "exports";
+  root.textContent = rootName || "工作区";
   root.addEventListener("click", () => openDir(""));
   crumbsNode.append(root);
   if (!path) return;
@@ -115,7 +115,7 @@ function renderCrumbs(path) {
 
 function renderFiles(payload) {
   currentDir = payload.path || "";
-  renderCrumbs(currentDir);
+  renderCrumbs(currentDir, payload.root_name);
   filesNode.replaceChildren();
   const entries = [];
   if (payload.parent !== null && payload.parent !== undefined && currentDir) {
@@ -125,7 +125,7 @@ function renderFiles(payload) {
   if (!entries.length) {
     const empty = document.createElement("p");
     empty.className = "empty-files";
-    empty.textContent = currentDir ? "这个目录是空的。" : "exports 里还没有文件。";
+    empty.textContent = "这个目录是空的。";
     filesNode.append(empty);
     return;
   }
@@ -242,7 +242,11 @@ taskForm.addEventListener("submit", async (event) => {
     await readJson(await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, skill: "pg_query" }),
+      body: JSON.stringify({
+        message,
+        skill: "pg_query,xlsx,pdf,docx",
+        permission: "accept-edits",
+      }),
     }));
     watchRun();
   } catch (error) {

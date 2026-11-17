@@ -52,9 +52,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--base-url", default=None)
     parser.add_argument("--api-key", default=None)
     parser.add_argument("--permission", choices=PERMISSION_MODES, default="default")
-    parser.add_argument("--max-rounds", type=int, default=12)
+    parser.add_argument("--max-rounds", type=int, default=990)
     parser.add_argument("--timeout", type=float, default=300)
-    parser.add_argument("--root", default=None, help="工作区目录，默认是项目根目录")
+    parser.add_argument("--root", default=str(script_dir() / "exports"), help="工作区目录")
     parser.add_argument("--no-mcp", action="store_true")
     parser.add_argument("--log-model", action="store_true")
     return parser
@@ -189,14 +189,8 @@ def apply_web_settings(agent, body: dict, *, persist: bool) -> str | None:
     return None
 
 
-def exports_root(agent) -> Path:
-    path = (agent.root / "exports").resolve()
-    path.mkdir(parents=True, exist_ok=True)
-    return path
-
-
 def workspace_path(agent, raw: str) -> Path:
-    root = exports_root(agent)
+    root = agent.root.resolve()
     text = unquote(str(raw or "")).strip().replace("\\", "/")
     if text.startswith("/") or ".." in Path(text).parts:
         raise PermissionError("路径不可访问")
@@ -233,7 +227,7 @@ def file_kind(path: Path) -> str:
 
 
 def list_workspace(agent, raw: str) -> dict:
-    root = exports_root(agent)
+    root = agent.root.resolve()
     target = workspace_path(agent, raw)
     if not target.is_dir():
         raise FileNotFoundError("没有这个目录")
@@ -259,7 +253,7 @@ def list_workspace(agent, raw: str) -> dict:
             }
         )
     items.sort(key=lambda item: (item["kind"] != "dir", item["name"].lower()))
-    return {"path": relative, "parent": parent, "items": items}
+    return {"path": relative, "parent": parent, "root_name": root.name, "items": items}
 
 
 def use_provider(agent, provider_id: str | None) -> str | None:
@@ -423,7 +417,11 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(400, {"error": "缺少 message"})
                 return
             skill = str(body.get("skill") or "").strip() or None
-            message += "\n\n文字和打印结果直接写在回答里，不要另存成文件。需要生成文件时，只能写到 exports/ 目录。"
+            message += (
+                "\n\n只查询时把结果写在回答里。"
+                "用户要求 Excel、PDF 或 Word 时，按已加载的 xlsx、pdf、docx 技能生成文件，"
+                "并且直接写在当前工作区。"
+            )
             provider = body.get("provider")
             provider = str(provider) if provider else None
             permission = body.get("permission")
@@ -597,7 +595,8 @@ class Handler(BaseHTTPRequestHandler):
 def main(argv: list[str] | None = None) -> int:
     load_dotenv(Path.cwd())
     args = build_parser().parse_args(argv)
-    root = Path(args.root or script_dir()).resolve()
+    root = Path(args.root).resolve()
+    root.mkdir(parents=True, exist_ok=True)
     archive_previous_run(root)
     agent = create_agent(
         root=root,
