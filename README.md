@@ -2,7 +2,7 @@
 
 工作区里的通用 Agent。模型只负责推理和提出工具调用；读文件、改文件、执行命令、加载技能、调用 MCP 和派子 Agent 都由运行时完成，并先做权限检查。
 
-对接 OpenAI 兼容的 `/chat/completions`。不依赖 `openai` 包，标准库即可跑 HTTP 服务。浏览器能力通过本机的 Playwright MCP 接入。
+对接 OpenAI 兼容的 `/chat/completions`。不依赖 `openai` 包，标准库即可跑 HTTP 服务。浏览器通过本机的 Playwright MCP 接入，PostgreSQL 通过只读的 postgres MCP 接入。
 
 ## 启动
 
@@ -119,13 +119,13 @@ Shell 不允许管道、重定向、命令替换，也不允许 `sudo`、`rm` �
 
 每次对话会按问题检索最多 3 个相关技能，只把名称和说明放进上下文。需要完整步骤时，模型再调用 `skill`。
 
-当前项目里有：`project_brief`、`code_review`、`browser`、`shell_script`、`rag_lookup`、`oem3_page`、`docx`、`pg_query`。各技能的用法见文末。
+当前项目里有：`project_brief`、`code_review`、`browser`、`shell_script`、`rag_lookup`、`oem3_page`、`docx`、`pdf`、`xlsx`、`pg_query`。各技能的用法见文末。
 
 自定义子 Agent 放在工作区的 `agents/*.md`，或用户技能目录旁边的 `agents/*.md`。`explore`、`plan`、`general` 这三个名字保留给内置类型。
 
 ## MCP
 
-配置读 `.mcp.json` 或 `settings.json` 里的 `mcpServers`。项目根目录和 `--root` 都会看，先读到的同名服务会被后读到的覆盖。当前仓库的 `.mcp.json` 启动本机 Playwright：
+配置读 `.mcp.json` 或 `settings.json` 里的 `mcpServers`。项目根目录和 `--root` 都会看，先读到的同名服务会被后读到的覆盖。当前仓库的 `.mcp.json` 启动本机 Playwright，以及只读的 PostgreSQL：
 
 ```json
 {
@@ -133,10 +133,26 @@ Shell 不允许管道、重定向、命令替换，也不允许 `sudo`、`rm` �
     "playwright": {
       "command": "node",
       "args": ["node_modules/@playwright/mcp/cli.js", "--headless", "--timeout-settle", "3000"]
+    },
+    "postgres": {
+      "command": "python3",
+      "args": ["-m", "agent_runtime.postgres_mcp"]
     }
   }
 }
 ```
+
+`postgres` 只提供 `query`，暴露给模型的名字是 `mcp__postgres__query`。它执行一条只读 SQL，连接使用进程环境里的 `DATABASE_URL`，或 `PGHOST`、`PGPORT`、`PGUSER`、`PGPASSWORD`、`PGDATABASE`。连接串不要写进 `.mcp.json`。服务启动时不连数据库，第一次查询才连接。
+
+只允许一条 `SELECT`、`WITH`、`SHOW`、`EXPLAIN`、`TABLE` 或 `VALUES`。写入语句在连库前拒绝。语句超时 20 秒，最多返回 100 行。`default` 即可调用，`plan` 不能调用 MCP，启动时也不要加 `--no-mcp`。查库步骤由 `pg_query` 技能规定。
+
+```bash
+python3 -m pip install "psycopg[binary]"
+export DATABASE_URL=postgresql://用户:密码@主机:5432/数据库名
+python -m agent_runtime.cli --skill pg_query "列出 public 下的表"
+```
+
+启动后日志里应出现 `MCP 已连接 postgres（1 个工具）`。
 
 第一次没有 `node_modules/@playwright/mcp/cli.js` 时，运行时会执行 `npm install`。也可以自己安装：
 
@@ -159,13 +175,15 @@ Playwright 只把这些工具交给模型：`browser_navigate`、`browser_snapsh
 | `agent_runtime/subagent.py` | 子 Agent |
 | `agent_runtime/workspace.py` | 工作区读写、搜索、Shell |
 | `agent_runtime/mcp.py` | MCP 连接和工具路由 |
+| `agent_runtime/postgres_mcp.py` | 只读 PostgreSQL MCP |
+| `agent_runtime/pg.py` | 只读 SQL 校验和执行 |
 | `agent_runtime/browser.py` | 页面稳定后截图，以及归档上一轮日志 |
 | `agent_runtime/config.py` | 常量、权限模式、模型默认值 |
 | `agent_runtime/util.py` | dotenv、frontmatter、分词、路径判断 |
 
 会话写在工作区的 `sessions/latest.json`。命令行用 `--resume` 恢复。HTTP 启动时不恢复，但对话过程仍会覆盖这份会话文件。
 
-需要 Python 3.10 或更新版本。要用浏览器工具时再装 Node.js。
+需要 Python 3.10 或更新版本。要用浏览器工具时再装 Node.js。要查 PostgreSQL 时再装 `psycopg[binary]`。
 
 ## 技能怎么用
 
@@ -229,11 +247,27 @@ python -m agent_runtime.cli --skill oem3_page "先登录，再打开建筑物菜
 python -m agent_runtime.cli --accept-edits --skill docx "把 prom_community.txt 做成一份 docx"
 ```
 
-### pg_query
+### pdf
 
-用一条只读 SQL 查询 PostgreSQL。连接放在 `DATABASE_URL`（`postgresql://用户:密码@主机:5432/数据库名`），或者 `PGHOST`、`PGPORT`、`PGUSER`、`PGPASSWORD`、`PGDATABASE`。写入语句会在连库前拒绝。需要 `accept-edits`，不能用 `fork`。首次查询若缺少驱动，技能会安装 `psycopg[binary]`。
+阅读、拆分、合并、旋转、加水印、填写表单或新建 PDF。用 `pypdf` 处理；填写表单时先读 `skills/pdf/FORMS.md`。生成或修改文件需要 `accept-edits`。
 
 ```bash
-export DATABASE_URL=postgresql://wangfei:ozS6lai9BMyJKg@101.126.157.201:7908/oem3_kps_en
-python -m agent_runtime.cli --accept-edits --skill pg_query "列出 public 下的表"
+python -m agent_runtime.cli --accept-edits --skill pdf "抽出 report.pdf 里的文字"
+```
+
+### xlsx
+
+创建、阅读或修改表格（`.xlsx`、`.xlsm`、`.csv`、`.tsv`）。新建和修改用 `openpyxl`，批量读写可以用 `pandas`。单元格里写公式，再用 `skills/xlsx/scripts/recalc.py` 重算。生成或修改文件需要 `accept-edits`。
+
+```bash
+python -m agent_runtime.cli --accept-edits --skill xlsx "按小区名单做一份 xlsx"
+```
+
+### pg_query
+
+用一条只读 SQL 查询 PostgreSQL。模型调用 `mcp__postgres__query`。连接放在 `DATABASE_URL`（`postgresql://用户:密码@主机:5432/数据库名`），或者 `PGHOST`、`PGPORT`、`PGUSER`、`PGPASSWORD`、`PGDATABASE`。写入语句会在连库前拒绝。`default` 即可调用；`plan` 不能调用 MCP，也不能用 `fork`。缺少驱动时，技能会在 `accept-edits` 下安装 `psycopg[binary]`。
+
+```bash
+export DATABASE_URL=postgresql://用户:密码@主机:5432/数据库名
+python -m agent_runtime.cli --skill pg_query "列出 public 下的表"
 ```

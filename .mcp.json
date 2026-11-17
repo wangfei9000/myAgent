@@ -3,6 +3,10 @@
     "playwright": {
       "command": "node",
       "args": ["node_modules/@playwright/mcp/cli.js", "--headless", "--timeout-settle", "3000"]
+    },
+    "postgres": {
+      "command": "python3",
+      "args": ["-m", "agent_runtime.postgres_mcp"]
     }
   }
 }

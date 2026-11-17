@@ -4,25 +4,26 @@ description: 用只读 SQL 查询 PostgreSQL，先看表结构再查数据。
 when-to-use: 用户要查 PostgreSQL、跑 SQL、看表结构、统计行数或核对某张表的数据时。
 ---
 
-连接信息只从环境变量读取。不要写进 SQL 文件，不要打印，也不要读取 `.env`。
+用 MCP 工具 `mcp__postgres__query` 执行一条只读 SQL。参数名是 `sql`。
+
+连接由 MCP 进程从环境变量读取。不要在对话、SQL 或文件里写连接串，不要打印，也不要读取 `.env`。
 
 - `DATABASE_URL`：`postgresql://用户:密码@主机:5432/数据库名`
 - 没设 `DATABASE_URL` 时，可以使用 `PGHOST`、`PGPORT`、`PGUSER`、`PGPASSWORD`、`PGDATABASE`
 
 这些变量都没有时停下来，告诉用户先在环境变量或 `.env` 里设置。
 
-只执行一条 `SELECT`、`WITH`、`SHOW`、`EXPLAIN`、`TABLE` 或 `VALUES`。遇到 `INSERT`、`UPDATE`、`DELETE`、`MERGE`、`DROP`、`ALTER`、`TRUNCATE`、`CREATE` 时停下来说明，不要写文件，也不要执行。
-
-查询脚本是 `skills/pg_query/scripts/query.py`。不要改它。
+只发送一条 `SELECT`、`WITH`、`SHOW`、`EXPLAIN`、`TABLE` 或 `VALUES`。遇到 `INSERT`、`UPDATE`、`DELETE`、`MERGE`、`DROP`、`ALTER`、`TRUNCATE`、`CREATE` 时停下来说明，不要调用工具。
 
 顺序：
 
-1. 用 `write_file` 把这一条 SQL 写到 `logs/pg_query.sql`。覆盖前先 `read_file`。
-2. 用 `run_shell` 执行 `python3 skills/pg_query/scripts/query.py logs/pg_query.sql`。不要把 SQL 放进命令，也不要加管道、重定向、分号或 `bash -c`。
-3. 把 `exit=` 和输出原样告诉用户。退出码不是 0 时不要说成成功，也不要自动换一条 SQL 重试。
-4. 输出写明缺少驱动时，再执行一次 `python3 -m pip install psycopg[binary]`，然后重新执行第 2 步。仍然失败就停下来。
-5. 工具返回「当前权限不能执行 Shell」时，告诉用户改用 `--accept-edits` 重新启动。
+1. 调用 `mcp__postgres__query`，参数 `sql` 是这一条 SQL。
+2. 把工具返回的原文告诉用户。返回里出现「查询失败」「连接失败」「已拒绝」时不要说成成功，也不要自动换一条 SQL 重试。
+3. 返回写明缺少驱动时，再用 `run_shell` 执行一次 `python3 -m pip install psycopg[binary]`，然后重新执行第 1 步。仍然失败就停下来。`run_shell` 需要 `accept-edits`。
+4. 工具不存在或提示 MCP 未连接时，告诉用户确认 `.mcp.json` 里有 `postgres`，并且启动时没有加 `--no-mcp`。
 
 要看有哪些表时，查询 `information_schema.tables`，条件用 `table_schema = 'public'`。要看字段时，查询 `information_schema.columns`。
 
-不要用 `skill` 的 `fork` 模式。`fork` 是只读的，不能调用 `run_shell`。
+`plan` 模式不能调用 MCP。查询用 `default` 或 `accept-edits`。
+
+不要用 `skill` 的 `fork` 模式。子 Agent 不连接 MCP。不要把 SQL 写进文件，也不要用 `run_shell` 执行 `skills/pg_query/scripts/query.py`。
