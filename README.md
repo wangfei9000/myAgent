@@ -272,3 +272,94 @@ python -m agent_runtime.cli --accept-edits --log-model --max-rounds 99 --skill x
 export DATABASE_URL=postgresql://用户:密码@主机:5432/数据库名
 python -m agent_runtime.cli --skill pg_query "列出 public 下的表"
 ```
+
+## 本地大模型（MLX + Hugging Face）
+
+在 Apple Silicon Mac 上用 Python 3.11、Hugging Face 镜像和 `mlx-vlm` 跑本地模型，并提供 OpenAI 兼容的 `/v1` 接口，供本 Agent 对接。
+
+### 1. 安装 Python 3.11
+
+```bash
+brew install python@3.11
+```
+
+### 2. 创建独立虚拟环境
+
+下面以 `/Users/mac/Downloads/llama` 为例，可改成你自己的目录：
+
+```bash
+cd /Users/mac/Downloads/llama
+python3.11 -m venv .venv
+source .venv/bin/activate
+```
+
+之后安装与运行都在该虚拟环境中进行。
+
+### 3. 安装 Hugging Face 工具
+
+```bash
+python -m pip install -U huggingface_hub
+```
+
+国内访问慢时，设置镜像后再下载：
+
+```bash
+export HF_ENDPOINT=https://hf-mirror.com
+```
+
+### 4. 下载模型
+
+示例下载到 `~/Models/`（目录名可自定）：
+
+```bash
+hf download baa-ai/Qwen3.8-27B-RAM-13GB-MLX --local-dir ~/Models/Qwen3.8-27B-RAM-13GB-MLX
+```
+
+内存更紧时可用更小的量化模型，例如 `Qwen3.5-4B-MLX-8bit`（按同样方式 `hf download` 到本地）。
+
+### 5. 安装 MLX-VLM
+
+```bash
+pip install -U mlx-vlm
+```
+
+### 6. 命令行试跑
+
+`--model` 填本地目录名或路径（与下载位置对应）：
+
+```bash
+python -m mlx_vlm.generate \
+  --model Qwen3.8-27B-RAM-13GB-MLX \
+  --prompt "请详细解释 PostgreSQL 的 MVCC 原理" \
+  --max-tokens 1024
+```
+
+### 7. 启动 OpenAI 兼容服务
+
+```bash
+python -m mlx_vlm.server \
+  --model Qwen3.5-4B-MLX-8bit \
+  --port 8080
+```
+
+浏览器或客户端访问：
+
+```text
+http://127.0.0.1:8080/v1
+```
+
+注意：本仓库的 `server.py` 默认也监听 `8080`。本机同时跑 Agent 服务和 MLX 服务时，请给其中一个换端口（例如 MLX 用 `8081`，Agent 仍用 `8080`）。
+
+### 8. 对接本 Agent
+
+把模型接口指到本地服务，例如：
+
+```bash
+export OPENAI_BASE_URL=http://127.0.0.1:8080/v1
+export OPENAI_API_KEY=local
+export OPENAI_MODEL=你的本地模型名
+
+python3 server.py --base-url "$OPENAI_BASE_URL" --api-key "$OPENAI_API_KEY" --model "$OPENAI_MODEL"
+```
+
+或在 Web 设置页填写同一组 `base-url` / `api-key` / `model`。密钥可填任意占位值；本地服务通常不校验。
