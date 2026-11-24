@@ -44,9 +44,36 @@ PROVIDERS = (
         "model": "qwen3.5:9b",
         "api_key": "123456",  # 只要不为空就行
     },
+    {
+        "id": "llama.cpp",
+        "label": "llama.cpp-qwen3.5:9b",
+        "base_url": "http://127.0.0.1:8081/v1",
+        "model": "qwen3.5:9b",
+        "api_key": "123456",  # 只要不为空就行
+    },
+    {
+        "id": "qwen3.8:27bs",
+        "label": "llama.cpp-qwen3.8-27bs",
+        "base_url": "http://127.0.0.1:8082/v1",
+        #"model": "qwen3.8:27b",
+        "model":"Qwen3.5-4B-MLX-8bit",
+        "api_key": "123456",  # 只要不为空就行
+    },
 )
 
 
 def script_dir() -> Path:
     """项目根目录。技能、MCP 配置和入口脚本都在这里。"""
     return Path(__file__).resolve().parent.parent
+
+
+def provider_by_id(provider_id: str | None) -> dict:
+    """按 PROVIDERS 的 id 取服务。未指定时用第一项。"""
+    if provider_id is None or not str(provider_id).strip():
+        return PROVIDERS[0]
+    wanted = str(provider_id).strip().lower()
+    for item in PROVIDERS:
+        if str(item["id"]).lower() == wanted:
+            return item
+    known = ", ".join(str(item["id"]) for item in PROVIDERS)
+    raise ValueError(f"未知模型服务 {provider_id}。可选：{known}")

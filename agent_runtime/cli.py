@@ -15,7 +15,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="参考 MyAgent 的 Agent Runtime")
     parser.add_argument("prompt", nargs="*", help="一次性任务；省略则进入 REPL")
     parser.add_argument("--prompt", dest="prompt_file", help="从文件读取一次性任务提示词")
-    parser.add_argument("--model", default=None, help="模型名，默认 MODEL 或 qwen3:8b")
+    parser.add_argument(
+        "--model",
+        default=None,
+        help="按 config.py 里 PROVIDERS 的 id 选择服务，例如 deepseek、ollama、llama.cpp；默认第一项",
+    )
     parser.add_argument("--base-url", default=None, help="OpenAI-compatible 根地址，默认本机 Ollama /v1")
     parser.add_argument("--api-key", default=None, help="API key，Ollama 可省略")
     parser.add_argument("--permission", choices=PERMISSION_MODES, default="default")
@@ -113,17 +117,21 @@ def main(argv: list[str] | None = None) -> int:
     mode = resolve_mode(args)
     root = Path(args.root or script_dir()).resolve()
     archived = archive_previous_run(root)
-    agent = create_agent(
-        root=root,
-        model=args.model,
-        base_url=args.base_url,
-        api_key=args.api_key,
-        permission_mode=mode,
-        max_rounds=args.max_rounds,
-        timeout=args.timeout,
-        enable_mcp=not args.no_mcp,
-        log_model=args.log_model,
-    )
+    try:
+        agent = create_agent(
+            root=root,
+            model=args.model,
+            base_url=args.base_url,
+            api_key=args.api_key,
+            permission_mode=mode,
+            max_rounds=args.max_rounds,
+            timeout=args.timeout,
+            enable_mcp=not args.no_mcp,
+            log_model=args.log_model,
+        )
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     try:
         model_name = getattr(agent.client, "model", "scripted")
         base_url = getattr(agent.client, "base_url", "")

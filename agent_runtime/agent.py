@@ -12,8 +12,8 @@ from . import browser, skill_exec, subagent, workspace
 from .config import (
     MAX_TOOL_CHARS,
     PERMISSION_MODES,
-    PROVIDERS,
     READ_ONLY_TOOLS,
+    provider_by_id,
 )
 from .mcp import McpManager, PLAYWRIGHT_RESULT_CHARS
 from .model import OpenAIClient
@@ -462,11 +462,11 @@ def create_agent(
         log_path = None
         if log_model:
             log_path = root_path / "logs" / "model.log"
-        provider = PROVIDERS[0]
+        provider = provider_by_id(model)
         client = OpenAIClient(
             base_url=base_url or provider["base_url"],
             api_key=api_key if api_key is not None else provider["api_key"],
-            model=model or provider["model"],
+            model=provider["model"],
             timeout=timeout,
             log_path=log_path,
         )

@@ -48,12 +48,15 @@ class OpenAIClient:
         if tools:
             body["tools"] = tools
             body["tool_choice"] = "auto"
-        # qwen3.5 走 Ollama 时默认先写很长的思考。think:false 不会关掉它，
-        # reasoning_effort=none 才会直接给出正文。同时改成流式：非流式要等整段生成完
-        # 才返回第一个字节，CPU 上容易撞上读超时。
+        # qwen3.5 默认先写 <think>。Ollama 上 think:false 关不掉，要用 reasoning_effort=none，
+        # 并改成流式，否则 CPU 上要等整段生成完才有第一个字节，容易读超时。
+        # llama.cpp 开了 --jinja 时，会在每次请求里把思考拆到 reasoning_content，content 变成空。
+        # chat_template_kwargs.enable_thinking=false 会让模板立刻闭合 <think>，正文回到 content。
         if self._ollama_endpoint():
             body["reasoning_effort"] = "none"
             body["stream"] = True
+        elif "qwen3" in self.model.lower():
+            body["chat_template_kwargs"] = {"enable_thinking": False}
         data = json.dumps(body, ensure_ascii=False).encode("utf-8")
         request = urllib.request.Request(url, data=data, method="POST")
         request.add_header("Content-Type", "application/json")
@@ -114,7 +117,7 @@ class OpenAIClient:
                 part.get("text", "") for part in content if isinstance(part, dict)
             )
         if not str(content).strip() and not calls:
-            content = message.get("reasoning") or ""
+            content = message.get("reasoning_content") or message.get("reasoning") or ""
         return ModelTurn(str(content), calls)
 
     def _sent_text(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> str:
@@ -165,6 +168,7 @@ class OpenAIClient:
 
     def _read_stream(self, response) -> ModelTurn:
         content_parts: list[str] = []
+        reasoning_parts: list[str] = []
         calls: dict[int, dict[str, str]] = {}
         for raw_line in response:
             line = raw_line.decode("utf-8", "replace").strip()
@@ -184,6 +188,9 @@ class OpenAIClient:
             piece = delta.get("content") or ""
             if piece:
                 content_parts.append(piece)
+            reasoning = delta.get("reasoning_content") or delta.get("reasoning") or ""
+            if reasoning:
+                reasoning_parts.append(reasoning)
             for call in delta.get("tool_calls") or []:
                 index = int(call.get("index") or 0)
                 slot = calls.setdefault(index, {"id": "", "name": "", "arguments": ""})
@@ -202,7 +209,10 @@ class OpenAIClient:
             }
             for index, slot in sorted(calls.items())
         ]
-        return ModelTurn("".join(content_parts), parsed)
+        content = "".join(content_parts)
+        if not content.strip() and not parsed:
+            content = "".join(reasoning_parts)
+        return ModelTurn(content, parsed)
 
     def _ollama_endpoint(self) -> bool:
         base = self.base_url.lower()

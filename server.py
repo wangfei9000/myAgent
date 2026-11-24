@@ -48,7 +48,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Agent HTTP 服务")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8080)
-    parser.add_argument("--model", default=None)
+    parser.add_argument(
+        "--model",
+        default=None,
+        help="按 config.py 里 PROVIDERS 的 id 选择服务，例如 deepseek、ollama、llama.cpp；默认第一项",
+    )
     parser.add_argument("--base-url", default=None)
     parser.add_argument("--api-key", default=None)
     parser.add_argument("--permission", choices=PERMISSION_MODES, default="default")
@@ -598,17 +602,21 @@ def main(argv: list[str] | None = None) -> int:
     root = Path(args.root).resolve()
     root.mkdir(parents=True, exist_ok=True)
     archive_previous_run(root)
-    agent = create_agent(
-        root=root,
-        model=args.model,
-        base_url=args.base_url,
-        api_key=args.api_key,
-        permission_mode=args.permission,
-        max_rounds=args.max_rounds,
-        timeout=args.timeout,
-        enable_mcp=not args.no_mcp,
-        log_model=args.log_model,
-    )
+    try:
+        agent = create_agent(
+            root=root,
+            model=args.model,
+            base_url=args.base_url,
+            api_key=args.api_key,
+            permission_mode=args.permission,
+            max_rounds=args.max_rounds,
+            timeout=args.timeout,
+            enable_mcp=not args.no_mcp,
+            log_model=args.log_model,
+        )
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     Handler.agent = agent
     client = agent.client
     STATE["origin"] = {
